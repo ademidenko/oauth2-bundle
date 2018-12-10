@@ -50,19 +50,11 @@ final class OAuth2Listener implements ListenerInterface
             return;
         }
 
-        try {
-            /** @var OAuth2Token $authenticatedToken */
-            $authenticatedToken = $this->authenticationManager->authenticate(new OAuth2Token($request, null));
-        } catch (AuthenticationException $e) {
-            $event->setResponse(new Response($e->getMessage(), Response::HTTP_UNAUTHORIZED));
-
-            return;
-        }
+        $authenticatedToken = $this->authenticationManager->authenticate(new OAuth2Token($request, null));
 
         if (!$this->isAccessToRouteGranted($event->getRequest(), $authenticatedToken)) {
-            $event->setResponse(new Response('The token has insufficient scopes.', Response::HTTP_FORBIDDEN));
 
-            return;
+            throw new AuthenticationException('The token has insufficient scopes.');
         }
 
         $this->tokenStorage->setToken($authenticatedToken);
