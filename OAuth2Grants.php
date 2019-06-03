@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Trikoder\Bundle\OAuth2Bundle;
 
-final class Oauth2Grants
+final class OAuth2Grants
 {
     /**
      * @see https://tools.ietf.org/html/rfc6749#section-1.3.1

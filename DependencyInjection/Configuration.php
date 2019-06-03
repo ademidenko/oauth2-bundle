@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Trikoder\Bundle\OAuth2Bundle\DependencyInjection;
 
 use Symfony\Component\Config\Definition\Builder\NodeDefinition;
@@ -13,8 +15,8 @@ final class Configuration implements ConfigurationInterface
      */
     public function getConfigTreeBuilder()
     {
-        $treeBuilder = new TreeBuilder();
-        $rootNode = $treeBuilder->root('trikoder_oauth2');
+        $treeBuilder = $this->getWrappedTreeBuilder('trikoder_oauth2');
+        $rootNode = $treeBuilder->getRootNode();
 
         $rootNode->append($this->createAuthorizationServerNode());
         $rootNode->append($this->createResourceServerNode());
@@ -26,8 +28,8 @@ final class Configuration implements ConfigurationInterface
 
     private function createAuthorizationServerNode(): NodeDefinition
     {
-        $treeBuilder = new TreeBuilder();
-        $node = $treeBuilder->root('authorization_server');
+        $treeBuilder = $this->getWrappedTreeBuilder('authorization_server');
+        $node = $treeBuilder->getRootNode();
 
         $node
             ->isRequired()
@@ -37,6 +39,10 @@ final class Configuration implements ConfigurationInterface
                     ->example('/var/oauth/private.key')
                     ->isRequired()
                     ->cannotBeEmpty()
+                ->end()
+                ->scalarNode('private_key_passphrase')
+                    ->info('Passphrase of the private key, if any')
+                    ->defaultValue(null)
                 ->end()
                 ->scalarNode('encryption_key')
                     ->info("The string used as an encryption key.\nHow to generate an encryption key: https://oauth2.thephpleague.com/installation/#string-password")
@@ -53,6 +59,18 @@ final class Configuration implements ConfigurationInterface
                     ->cannotBeEmpty()
                     ->defaultValue('P1M')
                 ->end()
+                ->booleanNode('enable_client_credentials_grant')
+                    ->info('Whether to enable the client credentials grant')
+                    ->defaultTrue()
+                ->end()
+                ->booleanNode('enable_password_grant')
+                    ->info('Whether to enable the password grant')
+                    ->defaultTrue()
+                ->end()
+                ->booleanNode('enable_refresh_token_grant')
+                    ->info('Whether to enable the refresh token grant')
+                    ->defaultTrue()
+                ->end()
             ->end()
         ;
 
@@ -61,8 +79,8 @@ final class Configuration implements ConfigurationInterface
 
     private function createResourceServerNode(): NodeDefinition
     {
-        $treeBuilder = new TreeBuilder();
-        $node = $treeBuilder->root('resource_server');
+        $treeBuilder = $this->getWrappedTreeBuilder('resource_server');
+        $node = $treeBuilder->getRootNode();
 
         $node
             ->isRequired()
@@ -81,8 +99,8 @@ final class Configuration implements ConfigurationInterface
 
     private function createScopesNode(): NodeDefinition
     {
-        $treeBuilder = new TreeBuilder();
-        $node = $treeBuilder->root('scopes');
+        $treeBuilder = $this->getWrappedTreeBuilder('scopes');
+        $node = $treeBuilder->getRootNode();
 
         $node
             ->info("Scopes that you wish to utilize in your application.\nThis should be a simple array of strings.")
@@ -95,19 +113,19 @@ final class Configuration implements ConfigurationInterface
 
     private function createPersistenceNode(): NodeDefinition
     {
-        $treeBuilder = new TreeBuilder();
-        $node = $treeBuilder->root('persistence');
+        $treeBuilder = $this->getWrappedTreeBuilder('persistence');
+        $node = $treeBuilder->getRootNode();
 
         $node
             ->info("Configures different persistence methods that can be used by the bundle for saving client and token data.\nOnly one persistence method can be configured at a time.")
             ->isRequired()
+            ->performNoDeepMerging()
             ->children()
                 // Doctrine persistence
                 ->arrayNode('doctrine')
                     ->children()
                         ->scalarNode('entity_manager')
                             ->info('Name of the entity manager that you wish to use for managing clients and tokens.')
-                            ->isRequired()
                             ->cannotBeEmpty()
                             ->defaultValue('default')
                         ->end()
@@ -120,5 +138,28 @@ final class Configuration implements ConfigurationInterface
         ;
 
         return $node;
+    }
+
+    private function getWrappedTreeBuilder(string $name): object
+    {
+        return new class($name) extends TreeBuilder {
+            public function __construct(string $name)
+            {
+                // Compatibility path for Symfony 3.4
+                if (!method_exists(TreeBuilder::class, 'getRootNode')) {
+                    $this->root($name);
+                }
+
+                // Compatibility path for Symfony 4.2+
+                if (method_exists(TreeBuilder::class, '__construct')) {
+                    parent::__construct($name);
+                }
+            }
+
+            public function getRootNode(): NodeDefinition
+            {
+                return $this->root;
+            }
+        };
     }
 }

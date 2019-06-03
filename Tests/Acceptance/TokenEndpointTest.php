@@ -1,22 +1,43 @@
 <?php
 
-namespace App\Tests\Acceptance;
+declare(strict_types=1);
 
+namespace Trikoder\Bundle\OAuth2Bundle\Tests\Acceptance;
+
+use DateTime;
 use Trikoder\Bundle\OAuth2Bundle\Event\UserResolveEvent;
+use Trikoder\Bundle\OAuth2Bundle\Manager\AccessTokenManagerInterface;
+use Trikoder\Bundle\OAuth2Bundle\Manager\ClientManagerInterface;
 use Trikoder\Bundle\OAuth2Bundle\Manager\RefreshTokenManagerInterface;
-use Trikoder\Bundle\OAuth2Bundle\Tests\Acceptance\AbstractAcceptanceTest;
+use Trikoder\Bundle\OAuth2Bundle\Manager\ScopeManagerInterface;
 use Trikoder\Bundle\OAuth2Bundle\Tests\Fixtures\FixtureFactory;
 use Trikoder\Bundle\OAuth2Bundle\Tests\TestHelper;
 
 final class TokenEndpointTest extends AbstractAcceptanceTest
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        FixtureFactory::initializeFixtures(
+            $this->client->getContainer()->get(ScopeManagerInterface::class),
+            $this->client->getContainer()->get(ClientManagerInterface::class),
+            $this->client->getContainer()->get(AccessTokenManagerInterface::class),
+            $this->client->getContainer()->get(RefreshTokenManagerInterface::class)
+        );
+    }
+
     public function testSuccessfulClientCredentialsRequest()
     {
+        timecop_freeze(new DateTime());
+
         $this->client->request('POST', '/token', [
             'client_id' => 'foo',
             'client_secret' => 'secret',
             'grant_type' => 'client_credentials',
         ]);
+
+        timecop_return();
 
         $response = $this->client->getResponse();
 
@@ -39,6 +60,8 @@ final class TokenEndpointTest extends AbstractAcceptanceTest
                 $event->setUser(FixtureFactory::createUser());
             });
 
+        timecop_freeze(new DateTime());
+
         $this->client->request('POST', '/token', [
             'client_id' => 'foo',
             'client_secret' => 'secret',
@@ -46,6 +69,8 @@ final class TokenEndpointTest extends AbstractAcceptanceTest
             'username' => 'user',
             'password' => 'pass',
         ]);
+
+        timecop_return();
 
         $response = $this->client->getResponse();
 
@@ -65,7 +90,9 @@ final class TokenEndpointTest extends AbstractAcceptanceTest
         $refreshToken = $this->client
             ->getContainer()
             ->get(RefreshTokenManagerInterface::class)
-            ->find(FixtureFactory::FIXUTRE_REFRESH_TOKEN);
+            ->find(FixtureFactory::FIXTURE_REFRESH_TOKEN);
+
+        timecop_freeze(new DateTime());
 
         $this->client->request('POST', '/token', [
             'client_id' => 'foo',
@@ -73,6 +100,8 @@ final class TokenEndpointTest extends AbstractAcceptanceTest
             'grant_type' => 'refresh_token',
             'refresh_token' => TestHelper::generateEncryptedPayload($refreshToken),
         ]);
+
+        timecop_return();
 
         $response = $this->client->getResponse();
 

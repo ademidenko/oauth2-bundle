@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Trikoder\Bundle\OAuth2Bundle\Tests\Integration;
 
 use Trikoder\Bundle\OAuth2Bundle\Tests\Fixtures\FixtureFactory;
@@ -7,6 +9,18 @@ use Trikoder\Bundle\OAuth2Bundle\Tests\TestHelper;
 
 final class ResourceServerTest extends AbstractIntegrationTest
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        FixtureFactory::initializeFixtures(
+            $this->scopeManager,
+            $this->clientManager,
+            $this->accessTokenManager,
+            $this->refreshTokenManager
+        );
+    }
+
     public function testValidAccessToken(): void
     {
         $existingAccessToken = $this->accessTokenManager->find(FixtureFactory::FIXTURE_ACCESS_TOKEN_PUBLIC);

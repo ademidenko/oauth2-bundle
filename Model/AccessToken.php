@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Trikoder\Bundle\OAuth2Bundle\Model;
 
 use DateTime;
@@ -41,8 +43,8 @@ class AccessToken
         DateTime $expiry,
         Client $client,
         ?string $userIdentifier,
-        array $scopes)
-    {
+        array $scopes
+    ) {
         $this->identifier = $identifier;
         $this->expiry = $expiry;
         $this->client = $client;
