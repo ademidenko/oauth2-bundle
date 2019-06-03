@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Trikoder\Bundle\OAuth2Bundle\Converter;
 
 use Trikoder\Bundle\OAuth2Bundle\League\Entity\Scope as ScopeEntity;
@@ -13,6 +15,8 @@ final class ScopeConverter
     }
 
     /**
+     * @param ScopeEntity[] $scopes
+     *
      * @return ScopeModel[]
      */
     public function toDomainArray(array $scopes): array
@@ -31,6 +35,8 @@ final class ScopeConverter
     }
 
     /**
+     * @param ScopeModel[] $scopes
+     *
      * @return ScopeEntity[]
      */
     public function toLeagueArray(array $scopes): array

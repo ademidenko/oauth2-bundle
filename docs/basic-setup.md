@@ -2,41 +2,93 @@
 
 ## Managing clients
 
-For now, clients have to be managed manually using SQL queries. Here are the fields that you can set on the client:
-
-| Field | Type | Required | Description | Notes |
-| --- | --- | --- | --- | --- |
-| identifier | string(32) | Yes | Client ID used for obtaining an access token. | *N/A* |
-| secret | string(128) | Yes | Client secret used for obtaining an access token. | *N/A* |
-| redirect_uris | string | No | List of URIs the user can get redirected to after completing the `authorization_code` flow. | Multiple values need to be separated with a space. |
-| grants | string | No | List of grants the client is able to utilize. | Multiple values need to be separated with a space. |
-| scopes | string | No | List of scopes the client will receive. | Multiple values need to be separated with a space. |
-| active | boolean | Yes | Whether the client can obtain new access tokens or not. | *N/A* |
+There are several commands available to manage clients.
 
 ### Add a client
 
-```sql
-INSERT INTO `oauth2_client` (`identifier`, `secret`, `active`) VALUES ('foo', 'bar', 1);
+To add a client you should use the `trikoder:oauth2:create-client` command.
+
+```sh
+Description:
+  Creates a new oAuth2 client
+
+Usage:
+  trikoder:oauth2:create-client [options] [--] [<identifier> [<secret>]]
+
+Arguments:
+  identifier                         The client identifier
+  secret                             The client secret
+
+Options:
+      --redirect-uri[=REDIRECT-URI]  Sets redirect uri for client. Use this option multiple times to set multiple redirect URIs. (multiple values allowed)
+      --grant-type[=GRANT-TYPE]      Sets allowed grant type for client. Use this option multiple times to set multiple grant types. (multiple values allowed)
+      --scope[=SCOPE]                Sets allowed scope for client. Use this option multiple times to set multiple scopes. (multiple values allowed)
+```
+
+
+### Update a client
+
+To update a client you should use the `trikoder:oauth2:update-client` command.
+
+```sh
+Description:
+  Updates an oAuth2 client
+
+Usage:
+  trikoder:oauth2:update-client [options] [--] <identifier>
+
+Arguments:
+  identifier                         The client ID
+
+Options:
+      --redirect-uri[=REDIRECT-URI]  Sets redirect uri for client. Use this option multiple times to set multiple redirect URIs. (multiple values allowed)
+      --grant-type[=GRANT-TYPE]      Sets allowed grant type for client. Use this option multiple times to set multiple grant types. (multiple values allowed)
+      --scope[=SCOPE]                Sets allowed scope for client. Use this option multiple times to set multiple scopes. (multiple values allowed)
+      --deactivated                  If provided, it will deactivate the given client.
 ```
 
 #### Restrict which grant types a client can access
 
-```sql
-UPDATE `oauth2_client` SET `grants` = 'client_credentials password' WHERE `identifier` = 'foo';
+```sh
+$ bin/console trikoder:oauth2:update-client --grant-type client_credentials --grant-type password foo
 ```
 
 #### Assign which scopes the client will receive
 
-```sql
-UPDATE `oauth2_client` SET `scopes` = 'create read' WHERE `identifier` = 'foo';
+
+```sh
+$ bin/console trikoder:oauth2:update-client --scope create --scope read foo
 ```
 
-> **NOTE:** You will have to setup an [event listener](controlling-token-scopes.md#listener) which will assign the client scopes to the issued access token.
-
 ### Delete a client
+To delete a client you should use the `trikoder:oauth2:delete-client` command.
 
-```sql
-DELETE FROM `oauth2_client` WHERE `identifier` = 'foo';
+```sh
+Description:
+  Deletes an oAuth2 client
+
+Usage:
+  trikoder:oauth2:delete-client <identifier>
+
+Arguments:
+  identifier            The client ID
+```
+
+### List clients
+To list clients you should use the `trikoder:oauth2:list-clients` command.
+
+```sh
+Description:
+  Lists existing oAuth2 clients
+
+Usage:
+  trikoder:oauth2:list-clients [options]
+
+Options:
+      --columns[=COLUMNS]            Determine which columns are shown. Comma separated list. [default: "identifier, secret, scope, redirect uri, grant type"]
+      --redirect-uri[=REDIRECT-URI]  Finds by redirect uri for client. Use this option multiple times to filter by multiple redirect URIs. (multiple values allowed)
+      --grant-type[=GRANT-TYPE]      Finds by allowed grant type for client. Use this option multiple times to filter by multiple grant types. (multiple values allowed)
+      --scope[=SCOPE]                Finds by allowed scope for client. Use this option multiple times to find by multiple scopes. (multiple values allowed)__
 ```
 
 ## Configuring the Security layer
@@ -73,7 +125,7 @@ oauth2_restricted:
     controller: 'App\Controller\FooController::barAction'
     defaults:
         oauth2_scopes: ['foo', 'bar']
-``` 
+```
 
 ## Security roles
 
@@ -83,11 +135,11 @@ Once the user gets past the `oauth2` firewall, they will be granted additional r
 ROLE_OAUTH2_<scope>
 ```
 
-Here's one of the example uses cases featuring the [@Security](https://symfony.com/doc/current/bundles/SensioFrameworkExtraBundle/annotations/security.html) annotation:
+Here's one of the example uses cases featuring the [@IsGranted](https://symfony.com/doc/current/bundles/SensioFrameworkExtraBundle/annotations/security.html#isgranted) annotation:
 
 ```php
 /**
- * @Security("has_role('ROLE_OAUTH2_EDIT')")
+ * @IsGranted("ROLE_OAUTH2_EDIT")
  */
 public function indexAction()
 {
@@ -100,6 +152,24 @@ public function indexAction()
 There are two possible reasons for the authentication server to reject a request:
 - Provided token is expired or invalid (HTTP response 401 `Unauthorized`)
 - Provided token is valid but scopes are insufficient (HTTP response 403 `Forbidden`)
+
+## Clearing expired access & refresh tokens
+
+To clear expired access & refresh tokens you can use the `trikoder:oauth2:clear-expired-tokens` command.
+
+The command removes all tokens whose expiry time is lesser than the current.
+
+```sh
+Description:
+  Clears all expired access and/or refresh tokens
+
+Usage:
+  trikoder:oauth2:clear-expired-tokens [options]
+
+Options:
+  -a, --access-tokens-only   Clear only access tokens.
+  -r, --refresh-tokens-only  Clear only refresh tokens.
+```
 
 ## CORS requests
 

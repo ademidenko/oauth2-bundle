@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Trikoder\Bundle\OAuth2Bundle\Event;
 
 use Symfony\Component\EventDispatcher\Event;
@@ -62,17 +64,11 @@ final class UserResolveEvent extends Event
         return $this->client;
     }
 
-    /**
-     * @return UserInterface
-     */
     public function getUser(): ?UserInterface
     {
         return $this->user;
     }
 
-    /**
-     * @param UserInterface $user
-     */
     public function setUser(?UserInterface $user): self
     {
         $this->user = $user;

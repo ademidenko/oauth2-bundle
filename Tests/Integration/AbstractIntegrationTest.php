@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Trikoder\Bundle\OAuth2Bundle\Tests\Integration;
 
 use Defuse\Crypto\Crypto;
 use Defuse\Crypto\Exception\CryptoException;
 use League\OAuth2\Server\AuthorizationServer;
+use League\OAuth2\Server\CryptKey;
 use League\OAuth2\Server\Exception\OAuthServerException;
 use League\OAuth2\Server\Grant\ClientCredentialsGrant;
 use League\OAuth2\Server\Grant\PasswordGrant;
@@ -15,6 +18,7 @@ use League\OAuth2\Server\Repositories\RefreshTokenRepositoryInterface;
 use League\OAuth2\Server\Repositories\ScopeRepositoryInterface;
 use League\OAuth2\Server\Repositories\UserRepositoryInterface;
 use League\OAuth2\Server\ResourceServer;
+use Nyholm\Psr7\Factory\Psr17Factory;
 use Psr\Http\Message\ServerRequestInterface;
 use Symfony\Bundle\FrameworkBundle\Tests\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -35,10 +39,7 @@ use Trikoder\Bundle\OAuth2Bundle\Manager\RefreshTokenManagerInterface;
 use Trikoder\Bundle\OAuth2Bundle\Manager\ScopeManagerInterface;
 use Trikoder\Bundle\OAuth2Bundle\Model\AccessToken;
 use Trikoder\Bundle\OAuth2Bundle\Model\RefreshToken;
-use Trikoder\Bundle\OAuth2Bundle\Tests\Fixtures\FixtureFactory;
 use Trikoder\Bundle\OAuth2Bundle\Tests\TestHelper;
-use Zend\Diactoros\Response;
-use Zend\Diactoros\ServerRequest;
 
 abstract class AbstractIntegrationTest extends TestCase
 {
@@ -78,22 +79,20 @@ abstract class AbstractIntegrationTest extends TestCase
     protected $resourceServer;
 
     /**
+     * @var Psr17Factory
+     */
+    private $psrFactory;
+
+    /**
      * {@inheritdoc}
      */
-    protected function setUp()
+    protected function setUp(): void
     {
         $this->scopeManager = new ScopeManager();
         $this->clientManager = new ClientManager();
         $this->accessTokenManager = new AccessTokenManager();
         $this->refreshTokenManager = new RefreshTokenManager();
         $this->eventDispatcher = new EventDispatcher();
-
-        FixtureFactory::initializeFixtures(
-            $this->scopeManager,
-            $this->clientManager,
-            $this->accessTokenManager,
-            $this->refreshTokenManager
-        );
 
         $scopeConverter = new ScopeConverter();
         $scopeRepository = new ScopeRepository($this->scopeManager, $this->clientManager, $scopeConverter, $this->eventDispatcher);
@@ -111,6 +110,8 @@ abstract class AbstractIntegrationTest extends TestCase
         );
 
         $this->resourceServer = $this->createResourceServer($accessTokenRepository);
+
+        $this->psrFactory = new Psr17Factory();
     }
 
     protected function getAccessToken(string $jwtToken): ?AccessToken
@@ -145,25 +146,31 @@ abstract class AbstractIntegrationTest extends TestCase
 
     protected function createAuthorizationRequest(?string $credentials, array $body = []): ServerRequestInterface
     {
-        $headers = [
-            'Authorization' => sprintf('Basic %s', base64_encode($credentials)),
-        ];
+        $request = $this
+            ->psrFactory
+            ->createServerRequest('', '')
+            ->withParsedBody($body)
+        ;
 
-        return new ServerRequest([], [], null, null, 'php://temp', $headers, [], [], $body);
+        if (null !== $credentials) {
+            $request = $request->withHeader('Authorization', sprintf('Basic %s', base64_encode($credentials)));
+        }
+
+        return $request;
     }
 
     protected function createResourceRequest(string $jwtToken): ServerRequestInterface
     {
-        $headers = [
-            'Authorization' => sprintf('Bearer %s', $jwtToken),
-        ];
-
-        return new ServerRequest([], [], null, null, 'php://temp', $headers);
+        return $this
+            ->psrFactory
+            ->createServerRequest('', '')
+            ->withHeader('Authorization', sprintf('Bearer %s', $jwtToken))
+        ;
     }
 
     protected function handleAuthorizationRequest(ServerRequestInterface $serverRequest): array
     {
-        $response = new Response();
+        $response = $this->psrFactory->createResponse();
 
         try {
             $response = $this->authorizationServer->respondToAccessTokenRequest($serverRequest, $response);
@@ -171,7 +178,7 @@ abstract class AbstractIntegrationTest extends TestCase
             $response = $e->generateHttpResponse($response);
         }
 
-        return json_decode($response->getBody(), true);
+        return json_decode($response->getBody()->__toString(), true);
     }
 
     protected function handleResourceRequest(ServerRequestInterface $serverRequest): ?ServerRequestInterface
@@ -196,7 +203,7 @@ abstract class AbstractIntegrationTest extends TestCase
             $clientRepository,
             $accessTokenRepository,
             $scopeRepository,
-            TestHelper::PRIVATE_KEY_PATH,
+            new CryptKey(TestHelper::PRIVATE_KEY_PATH, null, false),
             TestHelper::ENCRYPTION_KEY
         );
 
@@ -211,7 +218,7 @@ abstract class AbstractIntegrationTest extends TestCase
     {
         return new ResourceServer(
             $accessTokenRepository,
-            TestHelper::PUBLIC_KEY_PATH
+            new CryptKey(TestHelper::PUBLIC_KEY_PATH, null, false)
         );
     }
 }
