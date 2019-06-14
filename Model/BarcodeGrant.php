@@ -23,7 +23,7 @@ class BarcodeGrant extends PasswordGrant
     protected function validateUser(ServerRequestInterface $request, ClientEntityInterface $client)
     {
         $barcode = $this->getRequestParameter('barcode', $request);
-        if (!is_string($barcode) || mb_strlen($barcode) === 3) {
+        if (!is_string($barcode) || mb_strlen($barcode) <= 3) {
             throw OAuthServerException::invalidRequest('barcode');
         }
 
