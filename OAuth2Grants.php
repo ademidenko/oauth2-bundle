@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Trikoder\Bundle\OAuth2Bundle;
 
-final class Oauth2Grants
+final class OAuth2Grants
 {
     /**
      * @see https://tools.ietf.org/html/rfc6749#section-1.3.1
@@ -39,6 +41,11 @@ final class Oauth2Grants
      */
     public const REFRESH_TOKEN = 'refresh_token';
 
+    /**
+     * @var string
+     */
+    public const BARCODE = 'barcode';
+
     public static function has(string $grant): bool
     {
         // TODO: Add support for "authorization_code" and "implicit" grant types.
@@ -46,6 +53,8 @@ final class Oauth2Grants
             self::CLIENT_CREDENTIALS,
             self::PASSWORD,
             self::REFRESH_TOKEN,
-        ]);
+            self::BARCODE,
+        ], true);
     }
 }
+

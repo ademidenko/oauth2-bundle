@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Trikoder\Bundle\OAuth2Bundle\Event;
 
 use Symfony\Component\EventDispatcher\Event;
@@ -45,12 +47,9 @@ final class ScopeResolveEvent extends Event
         return $this->scopes;
     }
 
-    /**
-     * @param Scope[] $scopes
-     */
     public function setScopes(Scope ...$scopes): self
     {
-        $this->scopes = (array) $scopes;
+        $this->scopes = $scopes;
 
         return $this;
     }

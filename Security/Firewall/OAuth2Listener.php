@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Trikoder\Bundle\OAuth2Bundle\Security\Firewall;
 
 use Symfony\Bridge\PsrHttpMessage\HttpMessageFactoryInterface;
@@ -53,8 +55,7 @@ final class OAuth2Listener implements ListenerInterface
         $authenticatedToken = $this->authenticationManager->authenticate(new OAuth2Token($request, null));
 
         if (!$this->isAccessToRouteGranted($event->getRequest(), $authenticatedToken)) {
-
-            throw new AuthenticationException('The token has insufficient scopes.');
+            throw new AuthenticationException('The token has insufficient scopes.', Response::HTTP_UNAUTHORIZED);
         }
 
         $this->tokenStorage->setToken($authenticatedToken);

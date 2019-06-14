@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Trikoder\Bundle\OAuth2Bundle\Model;
 
 class Client
@@ -63,12 +65,9 @@ class Client
         return $this->redirectUris;
     }
 
-    /**
-     * @param RedirectUri[] $redirectUris
-     */
     public function setRedirectUris(RedirectUri ...$redirectUris): self
     {
-        $this->redirectUris = (array) $redirectUris;
+        $this->redirectUris = $redirectUris;
 
         return $this;
     }
@@ -81,12 +80,9 @@ class Client
         return $this->grants;
     }
 
-    /**
-     * @param Grant[] $grants
-     */
     public function setGrants(Grant ...$grants): self
     {
-        $this->grants = (array) $grants;
+        $this->grants = $grants;
 
         return $this;
     }
@@ -99,12 +95,9 @@ class Client
         return $this->scopes;
     }
 
-    /**
-     * @param Scope[] $scopes
-     */
     public function setScopes(Scope ...$scopes): self
     {
-        $this->scopes = (array) $scopes;
+        $this->scopes = $scopes;
 
         return $this;
     }
