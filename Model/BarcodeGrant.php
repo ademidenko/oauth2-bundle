@@ -27,9 +27,6 @@ class BarcodeGrant extends PasswordGrant
             throw OAuthServerException::invalidRequest('barcode');
         }
 
-        $barcode = substr($barcode, 0, -1);
-        $barcode = substr($barcode, 2);
-
         $user = $this->userRepository->getUserEntityByUserCredentials(
             $barcode,
             '',
